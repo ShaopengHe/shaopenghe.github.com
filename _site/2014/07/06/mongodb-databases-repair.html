@@ -51,7 +51,18 @@
   
   </section>
   <section class="post">
-  <p>1 - 登入PRIMARY的机器检查replica sets里的其他SECONDARY成员的数据是否跟PRIMARY保持同步：</p>
+  <p><strong>什么时候需要修复MongoDB Databases？</strong></p>
+
+<pre><code>1. 数据文件损坏，数据不一致。（通常出现在非正常关闭进程后，如断电）
+2. 数据文件不断增长，空间利用率低，磁盘空间不足。（MongoDB不会释放remove，drop等操作的空间，除非repair）
+3. 优化索引。（数据经常update，delete等）
+</code></pre>
+
+<p>如何修复MongoDB Replica Set的Databases？</p>
+
+<hr />
+
+<p>1 - 登入PRIMARY的机器检查replica set里的其他SECONDARY成员的数据是否跟PRIMARY保持同步：</p>
 
 <pre><code>$ mongo primary_host:port
 PRIMARY&gt; rs.status()
@@ -84,10 +95,7 @@ PRIMARY&gt; rs.status()
 
 <p>检查members数组里各个SECONDARY成员的<em>optime</em>是否与PRIMARY的<em>optime</em>保持一致， 接下来的操作将会丢失两者时间差的数据。</p>
 
-<ol>
-<li>将当前的PRIMARY切换为SECONDARY：</li>
-</ol>
-
+<p>2 - 将当前的PRIMARY切换为SECONDARY：</p>
 
 <pre><code>PRIMARY&gt; rs.stepDown()  # 切换
 2014-08-12T18:45:39.480+0800 DBClientCursor::init call() failed
@@ -121,41 +129,29 @@ SECONDARY&gt; rs.status()
 
 <p>检查是否切换成功（别的机器是否成为了PRIMARY， 当前机器是否成为了SECONDARY）</p>
 
-<ol>
-<li>结束当前的SECONDARY（旧的PRIMARY）进程：</li>
-</ol>
-
+<p>3 - 结束当前的SECONDARY（旧的PRIMARY）进程：</p>
 
 <pre><code>SECONDARY&gt; use admin
 SECONDARY&gt; db.shutdownServer()
 </code></pre>
 
-<p>检查各个使用到MongoDB的Client进程是否能正常查询和写入数据。</p>
+<p>检查各个使用到MongoDB的Clients进程是否能正常查询和写入数据。</p>
 
-<ol>
-<li>更改原PRIMARY的配置文件，取消replica set模式并更改端口启动</li>
-</ol>
-
+<p>4 - 更改原PRIMARY的配置文件，取消replica set模式并更改端口启动</p>
 
 <pre><code>$ sudo vi /etc/mongodb.conf
 # 注释掉 replSet = yourReplicaName 和 journal = true
 # 并更改 port 至原来不一样的值，例如 port = 30001 -&gt; 30011
 </code></pre>
 
-<ol>
-<li>以修复模式启动MongoDB：</li>
-</ol>
-
+<p>5 - 以修复模式启动MongoDB：</p>
 
 <pre><code>$ sudo -umongodb mongod -f /etc/mongodb.conf --repair --repairpath /xxx/xxx # /xxx/xxx 必须是MongoDB dbpath的子目录
 </code></pre>
 
 <p>修复期间可以通过log文件查看修复进度。</p>
 
-<ol>
-<li>修复完后，重新以replica set模式启动：</li>
-</ol>
-
+<p>6 - 修复完后，重新以replica set模式启动：</p>
 
 <pre><code>$ sudo vi /etc/mongodb.conf
 # 取消刚才replSet = yourReplicaName 和 journal = true 的注释
@@ -167,12 +163,9 @@ SECONDARY&gt; rs.status()
 
 <p>至此，数据库已修复完成， replica set恢复至正常状态。</p>
 
-<ol>
-<li>假如想将机器重新变成PRIMARY，只需要在现有的PRIMARY机器上重新执行步骤1-2。
-如果Replica Sets里有多个SECONDARY，MongoDB会在满足条件的基础上随机选取一个变成PRIMARY。
-如果想将特定的SECONDARY变成PRIMARY，可以在其他SECONDARY上执行<code>SECONDARY&gt; rs.freeze(60)</code> 防止其在60秒内变成PRIMARY。</li>
-</ol>
-
+<p>7 - 假如想将机器重新变成PRIMARY，只需要在现有的PRIMARY机器上重新执行步骤1-2。
+如果Replica Set里有多个SECONDARY，MongoDB会在满足条件的基础上随机选取一个变成PRIMARY。
+如果想将特定的SECONDARY变成PRIMARY，可以在其他SECONDARY上执行<code>SECONDARY&gt; rs.freeze(60)</code> 防止其在60秒内变成PRIMARY。</p>
 
 <p>P.S:
     在修复完数据库，重新启动MongoDB时，有可能出现端口被占用的情况，可以添加系统预留端口，防止MongoDB的端口被随机分配。</p>

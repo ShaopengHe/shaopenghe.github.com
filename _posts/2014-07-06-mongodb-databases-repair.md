@@ -5,8 +5,17 @@ tags:
     - mongodb
 ---
 
+**什么时候需要修复MongoDB Databases？**
 
-1 - 登入PRIMARY的机器检查replica sets里的其他SECONDARY成员的数据是否跟PRIMARY保持同步：
+    1. 数据文件损坏，数据不一致。（通常出现在非正常关闭进程后，如断电）
+    2. 数据文件不断增长，空间利用率低，磁盘空间不足。（MongoDB不会释放remove，drop等操作的空间，除非repair）
+    3. 优化索引。（数据经常update，delete等）
+
+如何修复MongoDB Replica Set的Databases？
+
+----------
+
+1 - 登入PRIMARY的机器检查replica set里的其他SECONDARY成员的数据是否跟PRIMARY保持同步：
 
 ```
 $ mongo primary_host:port
@@ -39,7 +48,7 @@ PRIMARY> rs.status()
 ```
 检查members数组里各个SECONDARY成员的*optime*是否与PRIMARY的*optime*保持一致， 接下来的操作将会丢失两者时间差的数据。
 
-2. 将当前的PRIMARY切换为SECONDARY：
+2 - 将当前的PRIMARY切换为SECONDARY：
 
 ```
 PRIMARY> rs.stepDown()  # 切换
@@ -73,17 +82,17 @@ SECONDARY> rs.status()
 ```
 检查是否切换成功（别的机器是否成为了PRIMARY， 当前机器是否成为了SECONDARY）
 
-3. 结束当前的SECONDARY（旧的PRIMARY）进程：
+3 - 结束当前的SECONDARY（旧的PRIMARY）进程：
 
 ```
 SECONDARY> use admin
 SECONDARY> db.shutdownServer()
 ```
 
-检查各个使用到MongoDB的Client进程是否能正常查询和写入数据。
+检查各个使用到MongoDB的Clients进程是否能正常查询和写入数据。
 
 
-4. 更改原PRIMARY的配置文件，取消replica set模式并更改端口启动
+4 - 更改原PRIMARY的配置文件，取消replica set模式并更改端口启动
 
 ```
 $ sudo vi /etc/mongodb.conf
@@ -91,14 +100,14 @@ $ sudo vi /etc/mongodb.conf
 # 并更改 port 至原来不一样的值，例如 port = 30001 -> 30011
 ```
 
-5. 以修复模式启动MongoDB：
+5 - 以修复模式启动MongoDB：
 
 ```
 $ sudo -umongodb mongod -f /etc/mongodb.conf --repair --repairpath /xxx/xxx # /xxx/xxx 必须是MongoDB dbpath的子目录
 ```
 修复期间可以通过log文件查看修复进度。
 
-6. 修复完后，重新以replica set模式启动：
+6 - 修复完后，重新以replica set模式启动：
 
 ```
 $ sudo vi /etc/mongodb.conf
@@ -111,8 +120,8 @@ SECONDARY> rs.status()
 
 至此，数据库已修复完成， replica set恢复至正常状态。
 
-7. 假如想将机器重新变成PRIMARY，只需要在现有的PRIMARY机器上重新执行步骤1-2。
-如果Replica Sets里有多个SECONDARY，MongoDB会在满足条件的基础上随机选取一个变成PRIMARY。
+7 - 假如想将机器重新变成PRIMARY，只需要在现有的PRIMARY机器上重新执行步骤1-2。
+如果Replica Set里有多个SECONDARY，MongoDB会在满足条件的基础上随机选取一个变成PRIMARY。
 如果想将特定的SECONDARY变成PRIMARY，可以在其他SECONDARY上执行```SECONDARY> rs.freeze(60) ``` 防止其在60秒内变成PRIMARY。
 
 P.S:
