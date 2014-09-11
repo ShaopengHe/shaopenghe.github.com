@@ -2,8 +2,8 @@ markdown: rdiscount
 highlighter: pygments
 permalink: /:year/:month/:day/:title.html
 name: "Peng's Blog"
-
 author: "Peng."
+
 atom-baseurl: "http://lhzhang.com"
 disqus: "gopherwood"
 

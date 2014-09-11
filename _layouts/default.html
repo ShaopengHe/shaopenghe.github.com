@@ -4,10 +4,11 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="author" content="{{ site.author }}" />
     {% if page.title %}
-    <title>{{ page.title }}</title>
+    <title>{{ page.title }} - {{ site.name }}</title>
     {% else %}
     <title>{{ site.name }}</title>
     {% endif %}
+    {% include ssn.html %}
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1">
     <link href="/atom.xml" rel="alternate" title="{{ site.name }}" type="application/atom+xml" />
     <link rel="stylesheet" href="/media/css/style.css">
@@ -22,25 +23,11 @@
   </head>
   <body>
       <div id="main" role="main">
-        <header>
-          <div id="header">
-            <h1><a title="{{ site.name }}" class="" href="/">{{ site.name }}</a></h1>
-          </div>
-          <nav>
-            {% for nav in site.navigations %}
-            <span><a title="{{ nav.title }}" href="{{ nav.href }}"><i class="{{ nav.class }}"></i></a></span>
-            {% endfor %}
-          </nav>
-        </header>
+        {% include header.html %}
         <div id="content">
         {{ content }}
         </div>
-        <footer>
-          <div>
-            {% assign first_post = site.posts | last %}
-            &copy; {{ first_post.date | date: "%Y" }} ~ {{ site.time | date: "%Y" }} {{ site.author }} | powered by jekyll | themed by <a href="http://lhzhang.com" title="sext vi" target="_blank">sext vi</a> | fork <a href="https://github.com/waynezhang/blog" title="fork me" target="_blank">me</a>
-          </div>
-        </footer>
+        {% include footer.html %}
       </div> <!-- main -->
   </body>
 </html>
